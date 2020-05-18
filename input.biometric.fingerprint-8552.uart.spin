@@ -44,6 +44,20 @@ PUB Stop
 PUB Defaults
 ' Set factory defaults
 
+PUB AddPolicy(policy) | tmp
+' Set fingerprint add user policy
+'   Valid values:
+'       0: Allow the same fingerprint to add a new user
+'       1: Prohibit adding the same fingerprint
+'   Any other value polls the device and returns the current setting
+    tmp := $00
+    readReg(core#FNGPRT_ADDMODE, 1, @tmp)
+    case policy
+        0, 1:
+            writeReg(core#FNGPRT_ADDMODE, 1, @policy)
+        OTHER:
+            return tmp
+
 PUB AddPrint(uid, priv) | tmp, user, idx
 ' Add a fingerprint to the database
 '   Valid values:
@@ -81,7 +95,7 @@ PUB Reset
 
 PUB Response(ptr_resp)
 ' Read response from fingerprint reader
-    bytemove(ptr, @_response, 8)
+    bytemove(ptr_resp, @_response, 8)
     bytefill(@_response, 0, 8)
 
 PUB Status
@@ -94,17 +108,33 @@ PRI GenChecksum(ptr_data, nr_bytes) | tmp
     repeat tmp from 1 to nr_bytes
         result ^= byte[ptr_data][tmp]
 
-PRI readReg(reg, nr_bytes, buff_addr) | tmp
+PRI readResp(nr_bytes, ptr_resp) | tmp
+
+    repeat tmp from 0 to nr_bytes-1
+        byte[ptr_resp][tmp] := uart.CharIn
+
+PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
 ' Read nr_bytes from register 'reg' to address 'buff_addr'
+    cmd_packet.byte[core#IDX_SOM] := core#SOM
     case reg
-        $00:                                                    ' Validate register number
-            'Special handling for register REG_NAME
+        core#FNGPRT_ADDMODE:
+            cmd_packet.byte[core#IDX_CMD] := reg
+            cmd_packet.byte[core#IDX_P1] := $00
+            cmd_packet.byte[core#IDX_P2] := $00
+            cmd_packet.byte[core#IDX_P3] := core#ADDMODE_R
+            cmd_packet.byte[core#IDX_0] := $00
+            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
+            cmd_packet.byte[core#IDX_EOM] := core#EOM
+
+            repeat tmp from core#IDX_SOM to core#IDX_EOM
+                uart.Char(cmd_packet.byte[tmp])
+
+            readResp(8, @_response)
+            byte[buff_addr][0] := _response[core#IDX_Q2]
+            return _response[core#IDX_Q2]
+
         OTHER:
             return FALSE
-
-' Example code to write to a device register - concept only
-'   NOTE: Not representative of any actual device. Replace with code required to implement
-'       your device's protocol.
 
 PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
 ' Write nr_bytes to register 'reg' stored at buff_addr
@@ -133,6 +163,21 @@ PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
 
             repeat tmp from core#IDX_SOM to core#IDX_EOM
                 uart.Char(cmd_packet.byte[tmp])
+
+        core#FNGPRT_ADDMODE:
+            cmd_packet.byte[core#IDX_CMD] := reg
+            cmd_packet.byte[core#IDX_P1] := $00
+            cmd_packet.byte[core#IDX_P2] := byte[buff_addr][0]
+            cmd_packet.byte[core#IDX_P3] := core#ADDMODE_W
+            cmd_packet.byte[core#IDX_0] := $00
+            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
+            cmd_packet.byte[core#IDX_EOM] := core#EOM
+
+            repeat tmp from core#IDX_SOM to core#IDX_EOM
+                uart.Char(cmd_packet.byte[tmp])
+
+            readResp(8, @_response)
+            return _response[core#IDX_Q2]
 
         OTHER:
             return FALSE

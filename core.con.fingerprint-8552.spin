@@ -132,6 +132,8 @@ CON
         FLD_0           = 0
         FLD_RPT         = 1
         FLD_RW_ADD      = 2
+        ADDMODE_W       = 0
+        ADDMODE_R       = 1
 
     CAPTURE_TIMEOUT     = $2E
 '       FLD_0           = 0

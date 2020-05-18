@@ -45,8 +45,14 @@ PUB Main | uid
 
     ser.str(string("delete all users", ser#CR, ser#LF))
     fng.DeleteAllUsers
-    fng.resp(@_r)
+    fng.Response(@_r)
     ser.hexdump(@_r, 0, 8, 8, 0, 5)
+
+    fng.AddPolicy(0)
+    ser.str(string("Add policy: "))
+    ser.dec(fng.AddPolicy(-2))
+    ser.newline
+
 
     uid := 1
 
@@ -55,8 +61,6 @@ PUB Main | uid
     ser.newline
     fng.AddPrint(uid, 1)
     ser.hex(fng.Status, 8)
-'    fng.resp(@_r)
-'    ser.hexdump(@_r, 0, 8, 8, 0, 5)
 
     flashled(led, 100)
 
