@@ -39,7 +39,7 @@ VAR
 
     byte _ser_cog, _r[8]
 
-PUB Main | uid
+PUB Main | uid, tmp
 
     Setup
 
@@ -61,7 +61,6 @@ PUB Main | uid
     ser.dec(fng.AddPolicy(-2))
     ser.newline
     ser.newline
-    time.sleep(1)
 
 {
     uid := 1
@@ -72,12 +71,23 @@ PUB Main | uid
     ser.hexdump(@_r, 0, 8, 8, 0, 9)
     ser.newline
 }
+{
     uid++
     ser.str(string("add user "))
     ser.dec(uid)
     ser.newline
     fng.AddPrint(uid, 1)
     ser.hex(fng.Status, 8)
+}
+
+    repeat
+        ser.str(string("user exists?: "))
+        tmp := fng.PrintMatchesUser(2)
+        fng.response(@_r)
+        ser.hexdump(@_r, 0, 8, 8, 0, 10)
+        ser.newline
+        ser.dec(tmp)
+        ser.newline
 
     flashled(led, 100)
 

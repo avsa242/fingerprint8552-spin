@@ -98,6 +98,14 @@ PUB DeleteUser(uid) | tmp
 PUB DeviceID
 ' Read device identification
 
+PUB PrintMatchesUser(uid)
+' Compare fingerprint against uid
+'   Returns:
+'       TRUE (-1) if fingerprint captured matches fingerprint recorded for uid
+'       FALSE (0) otherwise
+    result := readReg(core#COMPARE1TO1, 2, @uid)
+    result := (result ^ 1) * TRUE
+
 PUB Reset
 ' Reset the device
     if lookdown(_RST: 0..31)
@@ -124,7 +132,7 @@ PUB TotalUserCount
 PRI GenChecksum(ptr_data, nr_bytes) | tmp
 ' Generate checksum of nr_bytes from ptr_data
     result := $00
-    repeat tmp from 1 to nr_bytes
+    repeat tmp from core#CKSUM_START to nr_bytes
         result ^= byte[ptr_data][tmp]
 
 PRI readResp(nr_bytes, ptr_resp) | tmp
@@ -169,6 +177,24 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             byte[buff_addr][0] := _response[core#IDX_Q2]
             byte[buff_addr][1] := _response[core#IDX_Q1]
             return _response[core#IDX_Q2]
+
+        core#COMPARE1TO1:
+            cmd_packet.byte[core#IDX_CMD] := reg
+            cmd_packet.byte[core#IDX_P1] := byte[buff_addr][1]
+            cmd_packet.byte[core#IDX_P2] := byte[buff_addr][0]
+            cmd_packet.byte[core#IDX_P3] := $00
+            cmd_packet.byte[core#IDX_0] := $00
+            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
+            cmd_packet.byte[core#IDX_EOM] := core#EOM
+
+            repeat tmp from core#IDX_SOM to core#IDX_EOM
+                uart.Char(cmd_packet.byte[tmp])
+
+            readResp(8, @_response)
+            bytefill(buff_addr, $00, 4)
+            byte[buff_addr][0] := _response[core#IDX_Q3]
+            return _response[core#IDX_Q3]
+
         OTHER:
             return FALSE
 
