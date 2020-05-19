@@ -6,6 +6,12 @@ This is a P8X32A/Propeller driver for the Waveshare fingerprint reader, SKU# 855
 ## Salient Features
 
 * UART connection at 19.2kbps
+* Set duplicate print add policy
+* Add fingerprint to database, with privilege level
+* Delete specific user or all users
+* Match fingerprint against specific existing user ID, or entire database (return matching uid)
+* Return count of total users in database
+* Return privilege level of user ID
 
 ## Requirements
 

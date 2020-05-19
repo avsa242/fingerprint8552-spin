@@ -56,7 +56,6 @@ PUB Main | uid, tmp, priv
         priv := fng.UserPriv(tmp)
         ser.dec(priv)
         ser.newline
-
 {
     ser.str(string("delete all users", ser#CR, ser#LF))
     fng.DeleteAllUsers
