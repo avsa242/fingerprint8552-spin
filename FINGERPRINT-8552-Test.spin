@@ -80,12 +80,21 @@ PUB Main | uid, tmp
     ser.hex(fng.Status, 8)
 }
 
+{
     repeat
-        ser.str(string("user exists?: "))
+        ser.str(string("user matches uid "))
+        ser.dec(uid)
+        ser.str(string("? "))
         tmp := fng.PrintMatchesUser(2)
         fng.response(@_r)
-        ser.hexdump(@_r, 0, 8, 8, 0, 10)
+'       ser.hexdump(@_r, 0, 8, 8, 0, 10)
+        ser.dec(tmp)
         ser.newline
+}
+
+    repeat
+        ser.str(string("user id of print: "))
+        tmp := fng.PrintMatch
         ser.dec(tmp)
         ser.newline
 

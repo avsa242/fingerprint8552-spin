@@ -98,6 +98,13 @@ PUB DeleteUser(uid) | tmp
 PUB DeviceID
 ' Read device identification
 
+PUB PrintMatch
+' Compare fingerprint against entire database
+'   Returns:
+'       Matching uid, if any
+'       FALSE (0) otherwise
+    readReg(core#COMPARE1TON, 2, @result)
+
 PUB PrintMatchesUser(uid)
 ' Compare fingerprint against uid
 '   Returns:
@@ -161,7 +168,7 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             byte[buff_addr][0] := _response[core#IDX_Q2]
             return _response[core#IDX_Q2]
 
-        core#RD_NR_USERS:
+        core#RD_NR_USERS, core#COMPARE1TON:
             cmd_packet.byte[core#IDX_CMD] := reg
             cmd_packet.byte[core#IDX_P1] := $00
             cmd_packet.byte[core#IDX_P2] := $00
