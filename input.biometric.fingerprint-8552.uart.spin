@@ -117,8 +117,12 @@ PUB Status
 ' Return status of last command
     return _response[core#IDX_Q3]
 
+PUB TotalUserCount
+' Returns: Count of total number of users in database
+    readReg(core#RD_NR_USERS, 2, @result)
+
 PRI GenChecksum(ptr_data, nr_bytes) | tmp
-' Generature checksum of nr_bytes from ptr_data
+' Generate checksum of nr_bytes from ptr_data
     result := $00
     repeat tmp from 1 to nr_bytes
         result ^= byte[ptr_data][tmp]
@@ -149,6 +153,22 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             byte[buff_addr][0] := _response[core#IDX_Q2]
             return _response[core#IDX_Q2]
 
+        core#RD_NR_USERS:
+            cmd_packet.byte[core#IDX_CMD] := reg
+            cmd_packet.byte[core#IDX_P1] := $00
+            cmd_packet.byte[core#IDX_P2] := $00
+            cmd_packet.byte[core#IDX_P3] := $00
+            cmd_packet.byte[core#IDX_0] := $00
+            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
+            cmd_packet.byte[core#IDX_EOM] := core#EOM
+
+            repeat tmp from core#IDX_SOM to core#IDX_EOM
+                uart.Char(cmd_packet.byte[tmp])
+
+            readResp(8, @_response)
+            byte[buff_addr][0] := _response[core#IDX_Q2]
+            byte[buff_addr][1] := _response[core#IDX_Q1]
+            return _response[core#IDX_Q2]
         OTHER:
             return FALSE
 
