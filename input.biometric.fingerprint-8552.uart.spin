@@ -80,6 +80,21 @@ PUB DeleteAllUsers
 ' Delete all users in database
     writeReg(core#DEL_ALL_USERS, 0, 0)
 
+PUB DeleteUser(uid) | tmp
+' Delete a user from the databse
+'   Valid values:
+'       uid (User ID): $001..$FFF
+'   Any other value returns the error ACK_FAIL (1)
+    case uid
+        $001..$FFF:
+            tmp.byte[0] := uid.byte[1]
+            tmp.byte[1] := uid.byte[0]
+            tmp.byte[2] := $00
+        OTHER:
+            return core#ACK_FAIL
+
+    writeReg(core#DEL_USER, 3, @tmp)
+
 PUB DeviceID
 ' Read device identification
 
@@ -112,6 +127,7 @@ PRI readResp(nr_bytes, ptr_resp) | tmp
 
     repeat tmp from 0 to nr_bytes-1
         byte[ptr_resp][tmp] := uart.CharIn
+    uart.Flush
 
 PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
 ' Read nr_bytes from register 'reg' to address 'buff_addr'
@@ -152,7 +168,7 @@ PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             repeat tmp from core#IDX_SOM to core#IDX_EOM
                 uart.Char(cmd_packet.byte[tmp])
 
-        core#ADD_FNGPRT_01..core#ADD_FNGPRT_03:
+        core#ADD_FNGPRT_01..core#ADD_FNGPRT_03, core#DEL_USER:
             cmd_packet.byte[core#IDX_CMD] := reg
             cmd_packet.byte[core#IDX_P1] := byte[buff_addr][0]
             cmd_packet.byte[core#IDX_P2] := byte[buff_addr][1]
@@ -182,8 +198,7 @@ PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
         OTHER:
             return FALSE
 
-    repeat tmp from 0 to 7
-        _response[tmp] := uart.CharIn
+    readResp(8, @_response)
 
 DAT
 {

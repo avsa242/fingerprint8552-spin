@@ -47,15 +47,25 @@ PUB Main | uid
     fng.DeleteAllUsers
     fng.Response(@_r)
     ser.hexdump(@_r, 0, 8, 8, 0, 5)
+    ser.newline
+
 
     fng.AddPolicy(0)
     ser.str(string("Add policy: "))
     ser.dec(fng.AddPolicy(-2))
     ser.newline
-
+    ser.newline
+    time.sleep(1)
 
     uid := 1
+    fng.DeleteUser(uid)
+    ser.str(string("Delete user "))
+    ser.dec(uid)
+    fng.Response(@_r)
+    ser.hexdump(@_r, 0, 8, 8, 0, 9)
+    ser.newline
 
+    uid := 1
     ser.str(string("add user "))
     ser.dec(uid)
     ser.newline
