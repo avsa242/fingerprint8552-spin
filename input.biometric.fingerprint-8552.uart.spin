@@ -136,6 +136,11 @@ PUB TotalUserCount
 ' Returns: Count of total number of users in database
     readReg(core#RD_NR_USERS, 2, @result)
 
+PUB UserPriv(uid)
+' Returns: User privilege of uid
+    result := $00
+    result := readReg(core#RD_USER_PRIV, 1, @uid)
+
 PRI GenChecksum(ptr_data, nr_bytes) | tmp
 ' Generate checksum of nr_bytes from ptr_data
     result := $00
@@ -185,7 +190,7 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             byte[buff_addr][1] := _response[core#IDX_Q1]
             return _response[core#IDX_Q2]
 
-        core#COMPARE1TO1:
+        core#COMPARE1TO1, core#RD_USER_PRIV:
             cmd_packet.byte[core#IDX_CMD] := reg
             cmd_packet.byte[core#IDX_P1] := byte[buff_addr][1]
             cmd_packet.byte[core#IDX_P2] := byte[buff_addr][0]

@@ -39,7 +39,7 @@ VAR
 
     byte _ser_cog, _r[8]
 
-PUB Main | uid, tmp
+PUB Main | uid, tmp, priv
 
     Setup
 
@@ -48,6 +48,15 @@ PUB Main | uid, tmp
     fng.response(@_r)
     ser.hexdump(@_r, 0, 8, 8, 0, 3)
     ser.newline
+
+    repeat tmp from 1 to uid
+        ser.str(string("privilege for uid "))
+        ser.dec(tmp)
+        ser.str(string(": "))
+        priv := fng.UserPriv(tmp)
+        ser.dec(priv)
+        ser.newline
+
 {
     ser.str(string("delete all users", ser#CR, ser#LF))
     fng.DeleteAllUsers
