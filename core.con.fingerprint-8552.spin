@@ -111,6 +111,7 @@ CON
 '       FLD_0           = 3
 
     CMP_LEVEL           = $28
+    CMP_LEVEL_R         = $01
 '       FLD_0           = 0
         FLD_NEWLEVEL    = 1
         FLD_RW_CMPLEV   = 2

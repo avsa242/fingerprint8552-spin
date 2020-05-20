@@ -43,6 +43,8 @@ PUB Stop
 
 PUB Defaults
 ' Set factory defaults
+    AddPolicy(1)
+    ComparisonLevel(5)
 
 PUB AddPolicy(policy) | tmp
 ' Set fingerprint add user policy
@@ -63,8 +65,9 @@ PUB AddPrint(uid, priv) | tmp, user, idx
 '   Valid values:
 '       uid (User ID): $001..$FFF
 '       priv (User-privilege): 1, 2, 3 (meaning is user defined)
+'   Any other value returns the error ACK_FAIL (1)
     ifnot lookdown(uid: $001..$FFF) or lookdown(priv: 1, 2, 3)
-        return $FFFF
+        return core#ACK_FAIL
 
     user.byte[0] := uid.byte[1]
     user.byte[1] := uid.byte[0]
@@ -75,6 +78,19 @@ PUB AddPrint(uid, priv) | tmp, user, idx
         tmp := _response[core#IDX_Q3]
         if tmp <> core#ACK_SUCCESS                          ' If the module doesn't return SUCCESS,
             return tmp                                      '   quit and return the response
+
+PUB ComparisonLevel(level) | tmp
+' Set fingerprint comparison level
+'   Valid values: 0..9 (0: Most lenient, 9: Most strict)
+'   Any other value polls the device and returns the current setting
+    tmp := $00
+    readReg(core#CMP_LEVEL, 1, @tmp)
+    case level
+        0..9:
+        OTHER:
+            return tmp
+
+    writeReg(core#CMP_LEVEL, 1, @level)
 
 PUB DeleteAllUsers
 ' Delete all users in database
@@ -124,7 +140,8 @@ PUB Reset
         io.High(_RST)
 
 PUB Response(ptr_resp)
-' Read response from fingerprint reader
+' Read last response
+'   Returns: Address of response data
     bytemove(ptr_resp, @_response, 8)
     bytefill(@_response, 0, 8)
 
@@ -148,13 +165,13 @@ PRI GenChecksum(ptr_data, nr_bytes) | tmp
         result ^= byte[ptr_data][tmp]
 
 PRI readResp(nr_bytes, ptr_resp) | tmp
-
+' Read response from fingerprint reader
     repeat tmp from 0 to nr_bytes-1
         byte[ptr_resp][tmp] := uart.CharIn
     uart.Flush
 
 PRI writeCmd(cmd, p0, p1, p2, p3) | cmd_packet[2], tmp
-
+' Write command with parameters to fingerprint reader
     cmd_packet.byte[core#IDX_SOM] := core#SOM
     cmd_packet.byte[core#IDX_CMD] := cmd
     cmd_packet.byte[core#IDX_P1] := p0
@@ -167,9 +184,8 @@ PRI writeCmd(cmd, p0, p1, p2, p3) | cmd_packet[2], tmp
     repeat tmp from core#IDX_SOM to core#IDX_EOM
         uart.Char(cmd_packet.byte[tmp])
 
-PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
+PRI readReg(reg, nr_bytes, buff_addr) | tmp
 ' Read nr_bytes from register 'reg' to address 'buff_addr'
-    cmd_packet.byte[core#IDX_SOM] := core#SOM
     case reg
         core#FNGPRT_ADDMODE:
             writeCmd(reg, $00, $00, core#ADDMODE_R, $00)
@@ -194,12 +210,17 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             byte[buff_addr][0] := _response[core#IDX_Q3]
             return _response[core#IDX_Q3]
 
+        core#CMP_LEVEL:
+            writeCmd(reg, $00, $00, core#CMP_LEVEL_R, $00)
+            readResp(8, @_response)
+            byte[buff_addr][0] := _response[core#IDX_Q2]
+            return _response[core#IDX_Q2]
+
         OTHER:
             return FALSE
 
-PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
+PRI writeReg(reg, nr_bytes, buff_addr) | tmp
 ' Write nr_bytes to register 'reg' stored at buff_addr
-    cmd_packet.byte[core#IDX_SOM] := core#SOM
     case reg
         core#DEL_ALL_USERS, core#DORMANT:
             writeCmd(reg, $00, $00, $00, $00)
@@ -212,6 +233,11 @@ PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             readResp(8, @_response)
             return _response[core#IDX_Q2]
 
+        core#CMP_LEVEL:
+            writeCmd(reg, $00, byte[buff_addr][0], $00, $00)
+            readResp(8, @_response)
+            byte[buff_addr][0] := _response[core#IDX_Q3]
+            return _response[core#IDX_Q3]
         OTHER:
             return FALSE
 

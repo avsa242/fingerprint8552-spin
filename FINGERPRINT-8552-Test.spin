@@ -43,10 +43,15 @@ PUB Main | uid, tmp, priv
 
     Setup
 
+    fng.ComparisonLevel(5)
+    ser.str(string("comparison level: "))
+    ser.dec(fng.ComparisonLevel(-2))
+    ser.newline
+
     ser.str(string("total user count: "))
     ser.dec(uid := fng.TotalUserCount)
     fng.response(@_r)
-    ser.hexdump(@_r, 0, 8, 8, 0, 3)
+    ser.hexdump(@_r, 0, 8, 8, 0, 4)
     ser.newline
 
     repeat tmp from 1 to uid
