@@ -153,37 +153,33 @@ PRI readResp(nr_bytes, ptr_resp) | tmp
         byte[ptr_resp][tmp] := uart.CharIn
     uart.Flush
 
+PRI writeCmd(cmd, p0, p1, p2, p3) | cmd_packet[2], tmp
+
+    cmd_packet.byte[core#IDX_SOM] := core#SOM
+    cmd_packet.byte[core#IDX_CMD] := cmd
+    cmd_packet.byte[core#IDX_P1] := p0
+    cmd_packet.byte[core#IDX_P2] := p1
+    cmd_packet.byte[core#IDX_P3] := p2
+    cmd_packet.byte[core#IDX_0] := p3
+    cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
+    cmd_packet.byte[core#IDX_EOM] := core#EOM
+
+    repeat tmp from core#IDX_SOM to core#IDX_EOM
+        uart.Char(cmd_packet.byte[tmp])
+
 PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
 ' Read nr_bytes from register 'reg' to address 'buff_addr'
     cmd_packet.byte[core#IDX_SOM] := core#SOM
     case reg
         core#FNGPRT_ADDMODE:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := $00
-            cmd_packet.byte[core#IDX_P2] := $00
-            cmd_packet.byte[core#IDX_P3] := core#ADDMODE_R
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
+            writeCmd(reg, $00, $00, core#ADDMODE_R, $00)
 
             readResp(8, @_response)
             byte[buff_addr][0] := _response[core#IDX_Q2]
             return _response[core#IDX_Q2]
 
         core#RD_NR_USERS, core#COMPARE1TON:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := $00
-            cmd_packet.byte[core#IDX_P2] := $00
-            cmd_packet.byte[core#IDX_P3] := $00
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
+            writeCmd(reg, $00, $00, $00, $00)
 
             readResp(8, @_response)
             byte[buff_addr][0] := _response[core#IDX_Q2]
@@ -191,16 +187,7 @@ PRI readReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
             return _response[core#IDX_Q2]
 
         core#COMPARE1TO1, core#RD_USER_PRIV:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := byte[buff_addr][1]
-            cmd_packet.byte[core#IDX_P2] := byte[buff_addr][0]
-            cmd_packet.byte[core#IDX_P3] := $00
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
+            writeCmd(reg, byte[buff_addr][1], byte[buff_addr][0], $00, $00)
 
             readResp(8, @_response)
             bytefill(buff_addr, $00, 4)
@@ -215,41 +202,13 @@ PRI writeReg(reg, nr_bytes, buff_addr) | tmp, cmd_packet[2]
     cmd_packet.byte[core#IDX_SOM] := core#SOM
     case reg
         core#DEL_ALL_USERS, core#DORMANT:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := $00
-            cmd_packet.byte[core#IDX_P2] := $00
-            cmd_packet.byte[core#IDX_P3] := $00
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
+            writeCmd(reg, $00, $00, $00, $00)
 
         core#ADD_FNGPRT_01..core#ADD_FNGPRT_03, core#DEL_USER:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := byte[buff_addr][0]
-            cmd_packet.byte[core#IDX_P2] := byte[buff_addr][1]
-            cmd_packet.byte[core#IDX_P3] := byte[buff_addr][2]
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
+            writeCmd(reg, byte[buff_addr][0], byte[buff_addr][1], byte[buff_addr][2], $00)
 
         core#FNGPRT_ADDMODE:
-            cmd_packet.byte[core#IDX_CMD] := reg
-            cmd_packet.byte[core#IDX_P1] := $00
-            cmd_packet.byte[core#IDX_P2] := byte[buff_addr][0]
-            cmd_packet.byte[core#IDX_P3] := core#ADDMODE_W
-            cmd_packet.byte[core#IDX_0] := $00
-            cmd_packet.byte[core#IDX_CHK] := GenChecksum(@cmd_packet, 5)
-            cmd_packet.byte[core#IDX_EOM] := core#EOM
-
-            repeat tmp from core#IDX_SOM to core#IDX_EOM
-                uart.Char(cmd_packet.byte[tmp])
-
+            writeCmd(reg, $00, byte[buff_addr][0], core#ADDMODE_W, $00)
             readResp(8, @_response)
             return _response[core#IDX_Q2]
 
