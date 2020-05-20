@@ -5,7 +5,7 @@
     Description: Driver for Waveshare UART fingerprint reader SKU#8552
     Copyright (c) 2020
     Started May 18, 2020
-    Updated May 18, 2020
+    Updated May 20, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
