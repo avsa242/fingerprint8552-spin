@@ -5,13 +5,16 @@
     Description: Driver for Waveshare UART fingerprint reader SKU#8552
     Copyright (c) 2020
     Started May 18, 2020
-    Updated May 20, 2020
+    Updated Jul 10, 2020
     See end of file for terms of use.
     --------------------------------------------
 }
 
 CON
 
+' Fingerprint add user policies
+    ALLOW       = 0
+    PROHIBIT    = 1
 
 VAR
 
@@ -43,7 +46,7 @@ PUB Stop
 
 PUB Defaults
 ' Set factory defaults
-    AddPolicy(1)
+    AddPolicy(PROHIBIT)
     ComparisonLevel(5)
 
 PUB AddPolicy(policy) | tmp
@@ -53,12 +56,16 @@ PUB AddPolicy(policy) | tmp
 '       1: Prohibit adding the same fingerprint
 '   Any other value polls the device and returns the current setting
     tmp := $00
-    readReg(core#FNGPRT_ADDMODE, 1, @tmp)
+    writeCmd(core#FNGPRT_ADDMODE, $00, $00, core#ADDMODE_R, $00)
+    tmp := _response[core#IDX_Q2]
+
     case policy
         0, 1:
-            writeReg(core#FNGPRT_ADDMODE, 1, @policy)
         OTHER:
             return tmp
+
+    writeCmd(core#FNGPRT_ADDMODE, $00, policy, core#ADDMODE_W, $00)
+    result := _response[core#IDX_Q2]
 
 PUB AddPrint(uid, priv) | tmp, user, idx
 ' Add a fingerprint to the database
@@ -73,28 +80,31 @@ PUB AddPrint(uid, priv) | tmp, user, idx
     user.byte[1] := uid.byte[0]
     user.byte[2] := priv
 
-    repeat idx from 0 to 2
-        writeReg(core#ADD_FNGPRT_01 + idx, 3, @user)        ' Acquire 3 fingerprints
-        tmp := _response[core#IDX_Q3]
-        if tmp <> core#ACK_SUCCESS                          ' If the module doesn't return SUCCESS,
-            return tmp                                      '   quit and return the response
+    repeat idx from 0 to 2                                  ' Acquire 3 fingerprints
+        writeCmd(core#ADD_FNGPRT_01 + idx, user.byte[0], user.byte[1], user.byte[2], $00)
+        result := _response[core#IDX_Q3]
+        if result <> core#ACK_SUCCESS                       ' If the module doesn't return SUCCESS,
+            return                                          '   quit and return the response
 
 PUB ComparisonLevel(level) | tmp
 ' Set fingerprint comparison level
 '   Valid values: 0..9 (0: Most lenient, 9: Most strict)
 '   Any other value polls the device and returns the current setting
     tmp := $00
-    readReg(core#CMP_LEVEL, 1, @tmp)
+    writeCmd(core#CMP_LEVEL, $00, $00, core#CMP_LEVEL_R, $00)
+    tmp := _response[core#IDX_Q2]
+
     case level
         0..9:
         OTHER:
             return tmp
 
-    writeReg(core#CMP_LEVEL, 1, @level)
+    writeCmd(core#CMP_LEVEL, $00, level, $00, $00)
+    result := _response[core#IDX_Q3]
 
 PUB DeleteAllUsers
 ' Delete all users in database
-    writeReg(core#DEL_ALL_USERS, 0, 0)
+    writeCmd(core#DEL_ALL_USERS, $00, $00, $00, $00)
 
 PUB DeleteUser(uid) | tmp
 ' Delete a user from the databse
@@ -109,25 +119,29 @@ PUB DeleteUser(uid) | tmp
         OTHER:
             return core#ACK_FAIL
 
-    writeReg(core#DEL_USER, 3, @tmp)
+    writeCmd(core#DEL_USER, tmp.byte[0], tmp.byte[1], tmp.byte[2], $00)
+    result := _response[core#IDX_Q3]
 
 PUB DeviceID
 ' Read device identification
+' NOT IMPLEMENTED
 
 PUB PrintMatch
 ' Compare fingerprint against entire database
 '   Returns:
 '       Matching uid, if any
 '       FALSE (0) otherwise
-    readReg(core#COMPARE1TON, 2, @result)
+    writeCmd(core#COMPARE1TON, $00, $00, $00, $00)
+    result.byte[0] := _response[core#IDX_Q2]
+    result.byte[1] := _response[core#IDX_Q1]
 
 PUB PrintMatchesUser(uid)
 ' Compare fingerprint against uid
 '   Returns:
 '       TRUE (-1) if fingerprint captured matches fingerprint recorded for uid
 '       FALSE (0) otherwise
-    result := readReg(core#COMPARE1TO1, 2, @uid)
-    result := (result ^ 1) * TRUE
+    writeCmd(core#COMPARE1TO1, uid.byte[1], uid.byte[0], $00, $00)
+    result := ((_response[core#IDX_Q3]) ^ 1) * TRUE
 
 PUB Reset
 ' Reset the device
@@ -151,14 +165,16 @@ PUB Status
 
 PUB TotalUserCount
 ' Returns: Count of total number of users in database
-    readReg(core#RD_NR_USERS, 2, @result)
+    writeCmd(core#RD_NR_USERS, $00, $00, $00, $00)
+    result.byte[0] := _response[core#IDX_Q2]
+    result.byte[1] := _response[core#IDX_Q1]
 
 PUB UserPriv(uid)
 ' Returns: User privilege of uid
-    result := $00
-    result := readReg(core#RD_USER_PRIV, 1, @uid)
+    writeCmd(core#RD_USER_PRIV, uid.byte[1], uid.byte[0], $00, $00)
+    result := _response[core#IDX_Q3]
 
-PRI GenChecksum(ptr_data, nr_bytes) | tmp
+PRI genChecksum(ptr_data, nr_bytes) | tmp
 ' Generate checksum of nr_bytes from ptr_data
     result := $00
     repeat tmp from core#CKSUM_START to nr_bytes
@@ -183,63 +199,6 @@ PRI writeCmd(cmd, p0, p1, p2, p3) | cmd_packet[2], tmp
 
     repeat tmp from core#IDX_SOM to core#IDX_EOM
         uart.Char(cmd_packet.byte[tmp])
-
-PRI readReg(reg, nr_bytes, buff_addr) | tmp
-' Read nr_bytes from register 'reg' to address 'buff_addr'
-    case reg
-        core#FNGPRT_ADDMODE:
-            writeCmd(reg, $00, $00, core#ADDMODE_R, $00)
-
-            readResp(8, @_response)
-            byte[buff_addr][0] := _response[core#IDX_Q2]
-            return _response[core#IDX_Q2]
-
-        core#RD_NR_USERS, core#COMPARE1TON:
-            writeCmd(reg, $00, $00, $00, $00)
-
-            readResp(8, @_response)
-            byte[buff_addr][0] := _response[core#IDX_Q2]
-            byte[buff_addr][1] := _response[core#IDX_Q1]
-            return _response[core#IDX_Q2]
-
-        core#COMPARE1TO1, core#RD_USER_PRIV:
-            writeCmd(reg, byte[buff_addr][1], byte[buff_addr][0], $00, $00)
-
-            readResp(8, @_response)
-            bytefill(buff_addr, $00, 4)
-            byte[buff_addr][0] := _response[core#IDX_Q3]
-            return _response[core#IDX_Q3]
-
-        core#CMP_LEVEL:
-            writeCmd(reg, $00, $00, core#CMP_LEVEL_R, $00)
-            readResp(8, @_response)
-            byte[buff_addr][0] := _response[core#IDX_Q2]
-            return _response[core#IDX_Q2]
-
-        OTHER:
-            return FALSE
-
-PRI writeReg(reg, nr_bytes, buff_addr) | tmp
-' Write nr_bytes to register 'reg' stored at buff_addr
-    case reg
-        core#DEL_ALL_USERS, core#DORMANT:
-            writeCmd(reg, $00, $00, $00, $00)
-
-        core#ADD_FNGPRT_01..core#ADD_FNGPRT_03, core#DEL_USER:
-            writeCmd(reg, byte[buff_addr][0], byte[buff_addr][1], byte[buff_addr][2], $00)
-
-        core#FNGPRT_ADDMODE:
-            writeCmd(reg, $00, byte[buff_addr][0], core#ADDMODE_W, $00)
-            readResp(8, @_response)
-            return _response[core#IDX_Q2]
-
-        core#CMP_LEVEL:
-            writeCmd(reg, $00, byte[buff_addr][0], $00, $00)
-            readResp(8, @_response)
-            byte[buff_addr][0] := _response[core#IDX_Q3]
-            return _response[core#IDX_Q3]
-        OTHER:
-            return FALSE
 
     readResp(8, @_response)
 
