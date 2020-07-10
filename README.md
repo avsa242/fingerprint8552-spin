@@ -3,6 +3,8 @@
 
 This is a P8X32A/Propeller driver for the Waveshare fingerprint reader, SKU# 8552
 
+**IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
+
 ## Salient Features
 
 * UART connection at 19.2kbps
@@ -16,11 +18,20 @@ This is a P8X32A/Propeller driver for the Waveshare fingerprint reader, SKU# 855
 
 ## Requirements
 
+P1/SPIN1:
+* spin-standard-library
 * P1/SPIN1: 1 extra core/cog for the PASM UART engine
+
+P2/SPIN2:
+* p2-spin-standard-library
 
 ## Compiler Compatibility
 
 * P1/SPIN1: OpenSpin (tested with 1.00.81)
+* P2/SPIN2: FastSpin (tested with 4.2.4)
+* ~~BST~~ (incompatible - no preprocessor)
+* ~~Propeller Tool~~ (incompatible - no preprocessor)
+* ~~PNut~~ (incompatible - no preprocessor)
 
 ## Limitations
 
