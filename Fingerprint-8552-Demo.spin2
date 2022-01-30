@@ -33,8 +33,7 @@ OBJ
 
     cfg     : "core.con.boardcfg.p2eval"
     ser     : "com.serial.terminal.ansi"
-    time    : "time"
-    fng     : "input.biometric.fingerprint-8552.uart"
+    fng     : "input.biometric.fingerprint-8552"
 
 VAR
 
