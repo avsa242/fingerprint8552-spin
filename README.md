@@ -5,6 +5,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver for the Waveshare fing
 
 **IMPORTANT**: This software is meant to be used with the [spin-standard-library](https://github.com/avsa242/spin-standard-library) (P8X32A) or [p2-spin-standard-library](https://github.com/avsa242/p2-spin-standard-library) (P2X8C4M64P). Please install the applicable library first before attempting to use this code, otherwise you will be missing several files required to build the project.
 
+
 ## Salient Features
 
 * UART connection at 19.2kbps
@@ -16,6 +17,7 @@ This is a P8X32A/Propeller, P2X8C4M64P/Propeller 2 driver for the Waveshare fing
 * Return count of total users in database
 * Return privilege level of user ID
 
+
 ## Requirements
 
 P1/SPIN1:
@@ -25,20 +27,21 @@ P1/SPIN1:
 P2/SPIN2:
 * p2-spin-standard-library
 
+
 ## Compiler Compatibility
 
-* P1/SPIN1 OpenSpin (bytecode): Untested (deprecated)
-* P1/SPIN1 FlexSpin (bytecode): OK, tested with 5.9.7-beta
-* P1/SPIN1 FlexSpin (native): OK, tested with 5.9.7-beta
-* ~~P2/SPIN2 FlexSpin (nu-code): FTBFS, tested with 5.9.7-beta~~
-* P2/SPIN2 FlexSpin (native): OK, tested with 5.9.7-beta
-* ~~BST~~ (incompatible - no preprocessor)
-* ~~Propeller Tool~~ (incompatible - no preprocessor)
-* ~~PNut~~ (incompatible - no preprocessor)
+| Processor | Language | Compiler               | Backend      | Status                |
+|-----------|----------|------------------------|--------------|-----------------------|
+| P1        | SPIN1    | FlexSpin (6.9.4)       | Bytecode     | OK                    |
+| P1        | SPIN1    | FlexSpin (6.9.4)       | Native/PASM  | OK                    |
+| P2        | SPIN2    | FlexSpin (6.9.4)       | NuCode       | Untested              |
+| P2        | SPIN2    | FlexSpin (6.9.4)       | Native/PASM2 | OK                    |
+
+(other versions or toolchains not listed are __not supported__, and _may or may not_ work)
+
 
 ## Limitations
 
-* Very early in development - may malfunction, or outright fail to build
 * Doesn't read fingerprint images/eigenvalues
-* Driver will start successfully even if communication with the reader hasn't actually been established (no DeviceID(), or similar verification yet)
+* Driver will start successfully even if communication with the reader hasn't actually been established (no `dev_id()`, or similar verification yet)
 
