@@ -174,12 +174,12 @@ PRI show_settings()
     ser.pos_xy(50, 3)
     reader.comparison_level(_cmplvl)
     ser.str(@"Comparison level: ")
-    ser.dec(reader.comparison_level(-2))
+    ser.dec(reader.comparison_level())
 
     ser.pos_xy(50, 4)
     reader.add_policy(_add_pol)
     ser.str(@"Duplicate print add policy: ")
-    _add_pol := reader.add_policy(-2)
+    _add_pol := reader.add_policy()
     ser.str(lookupz(_add_pol: @"Allow", @"Prohibit") )
 
 

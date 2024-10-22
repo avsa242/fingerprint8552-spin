@@ -73,7 +73,7 @@ PUB defaults
     comparison_level(5)
 
 
-PUB add_policy(plc): c
+PUB add_policy(plc=-2): c
 ' Set fingerprint add user policy
 '   Valid values:
 '       0: Allow the same fingerprint to add a new user
@@ -106,7 +106,7 @@ PUB add_print(uid, priv): stat | idx
             return                              '   quit and return the response
 
 
-PUB comparison_level(l): c
+PUB comparison_level(l=-2): c
 ' Set fingerprint comparison level
 '   Valid values: 0..9 (0: Most lenient, 9: Most strict)
 '   Any other value polls the device and returns the current setting
